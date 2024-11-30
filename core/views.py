@@ -211,3 +211,7 @@ def student_info(request):
 def restaurant_management(request):
     restaurants = Restaurant.objects.all()
     return render(request, 'core/restaurant_management.html', {'restaurants': restaurants})
+
+def student_info(request):
+    students = Student.objects.prefetch_related('order_set__items').all()
+    return render(request, 'core/student_info.html', {'students': students})
