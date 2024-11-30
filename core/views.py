@@ -158,8 +158,12 @@ def restaurant_info(request):
     return render(request, 'core/restaurant_info.html', {'restaurants': restaurants})
 
 def restaurant_management(request):
-    restaurants = Restaurant.objects.all()
-    return render(request, 'core/restaurant_management.html', {'restaurants': restaurants})
+    restaurants = Restaurant.objects.prefetch_related(
+        'menus'
+    ).all().order_by('name')
+    return render(request, 'core/restaurant_management.html', {
+        'restaurants': restaurants
+    })
 
 def student_management(request):
     students = Student.objects.all()
@@ -238,46 +242,58 @@ def financial_overview(request):
 @csrf_exempt
 @require_http_methods(["POST"])
 def create_restaurant(request):
-    data = json.loads(request.body)
-    restaurant = Restaurant.objects.create(
-        name=data['name'],
-        address=data['address'],
-        operating_hours=data['operating_hours']
-    )
-    
-    # Create menus with prices
-    for menu_data in data.get('menus', []):
-        if menu_data['name']:
+    try:
+        data = json.loads(request.body)
+        print("Received data:", data)  # Debug print
+        
+        restaurant = Restaurant.objects.create(
+            name=data['name'],
+            address=data['address'],
+            operating_hours=data['operating_hours']
+        )
+        
+        # Create menus
+        for menu_data in data.get('menus', []):
             Menu.objects.create(
                 name=menu_data['name'],
                 price=menu_data['price'],
                 restaurant=restaurant
             )
-    
-    return JsonResponse({'id': restaurant.id}, status=201)
+        
+        print(f"Created restaurant: {restaurant.name}")  # Debug print
+        return JsonResponse({
+            'id': restaurant.id,
+            'message': 'Restaurant created successfully'
+        }, status=201)
+    except Exception as e:
+        print(f"Error creating restaurant: {str(e)}")  # Debug print
+        return JsonResponse({'error': str(e)}, status=400)
 
 @csrf_exempt
 @require_http_methods(["PUT"])
 def update_restaurant(request, restaurant_id):
-    restaurant = get_object_or_404(Restaurant, id=restaurant_id)
-    data = json.loads(request.body)
-    
-    restaurant.name = data['name']
-    restaurant.address = data['address']
-    restaurant.operating_hours = data['operating_hours']
-    restaurant.save()
-    
-    # Update menus with prices
-    restaurant.menus.all().delete()
-    for menu_data in data.get('menus', []):
-        if menu_data['name']:
+    try:
+        restaurant = get_object_or_404(Restaurant, id=restaurant_id)
+        data = json.loads(request.body)
+        
+        restaurant.name = data['name']
+        restaurant.address = data['address']
+        restaurant.operating_hours = data['operating_hours']
+        restaurant.save()
+        
+        # Update menus
+        restaurant.menus.all().delete()
+        for menu_data in data.get('menus', []):
             Menu.objects.create(
                 name=menu_data['name'],
                 price=menu_data['price'],
                 restaurant=restaurant
             )
-    
-    return JsonResponse({'status': 'success'})
+        
+        return JsonResponse({'status': 'success'})
+    except Exception as e:
+        print('Error updating restaurant:', str(e))  # Add this for debugging
+        return JsonResponse({'error': str(e)}, status=400)
 
 @csrf_exempt
 @require_http_methods(["DELETE"])
@@ -310,10 +326,6 @@ def student_info(request):
     ).all()
     
     return render(request, 'core/student_info.html', {'students': students})
-
-def restaurant_management(request):
-    restaurants = Restaurant.objects.all()
-    return render(request, 'core/restaurant_management.html', {'restaurants': restaurants})
 
 def get_restaurant_menu_items(request, restaurant_id):
     restaurant = get_object_or_404(Restaurant, id=restaurant_id)

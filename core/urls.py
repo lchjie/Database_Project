@@ -2,7 +2,11 @@ from django.urls import path
 from . import views  # Import views from the core app
 
 urlpatterns = [
-    # Define your app-specific routes here
+    path('restaurant/create/', views.create_restaurant, name='create_restaurant'),
+    path('restaurant/<int:restaurant_id>/', views.get_restaurant_details, name='get_restaurant_details'),
+    path('restaurant/<int:restaurant_id>/update/', views.update_restaurant, name='update_restaurant'),
+    path('restaurant/<int:restaurant_id>/delete/', views.delete_restaurant, name='delete_restaurant'),
+    path('api/restaurant/<int:restaurant_id>/', views.get_restaurant_details, name='get_restaurant_details'),
     path('restaurants/manage/', views.restaurant_management, name='restaurant_management'),
     path('restaurants/info/', views.restaurant_info, name='restaurant_info'),
     path('restaurants/', views.restaurant_info, name='restaurant_list'),
@@ -29,7 +33,11 @@ urlpatterns = [
     path('api/restaurants/info/', views.restaurant_info, name='restaurant_info'),
     path('api/financial/', views.financial_overview, name='financial_overview'),
     path('api/restaurants/create/', views.create_restaurant, name='create_restaurant'),
-        path('restaurants/manage/', views.restaurant_management, name='restaurant_management'),
+    path('api/restaurant/create/', views.create_restaurant, name='create_restaurant'),
+    path('api/restaurant/<int:restaurant_id>/', views.get_restaurant_details, name='get_restaurant_details'),
+    path('api/restaurant/<int:restaurant_id>/update/', views.update_restaurant, name='update_restaurant'),
+    path('api/restaurant/<int:restaurant_id>/delete/', views.delete_restaurant, name='delete_restaurant'),
+    path('restaurants/manage/', views.restaurant_management, name='restaurant_management'),
     path('restaurants/info/', views.restaurant_info, name='restaurant_info'),
     path('api/order/create/', views.create_order, name='create_order'),
     path('api/order/<int:order_id>/', views.get_order, name='get_order'),

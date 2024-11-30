@@ -1,0 +1,42 @@
+[
+    {
+        "model": "core.student",
+        "pk": 1,
+        "fields": {
+            "computing_id": "abc123",
+            "first_name": "John",
+            "middle_name": "",
+            "last_name": "Doe",
+            "email": "abc123@virginia.edu",
+            "phone_number": "434-555-0101",
+            "account_balance": "100.00"
+        }
+    },
+    {
+        "model": "core.restaurant",
+        "pk": 1,
+        "fields": {
+            "name": "Italian Restaurant",
+            "address": "123 Main St",
+            "operating_hours": "11:00 AM - 10:00 PM"
+        }
+    },
+    {
+        "model": "core.menu",
+        "pk": 1,
+        "fields": {
+            "name": "Lunch Menu",
+            "restaurant": 1,
+            "price": "15.99"
+        }
+    },
+    {
+        "model": "core.item",
+        "pk": 1,
+        "fields": {
+            "name": "Spaghetti Carbonara",
+            "price": "16.99",
+            "menu": 1
+        }
+    }
+] 

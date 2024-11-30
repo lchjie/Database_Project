@@ -16,7 +16,7 @@
                         {% for restaurant in restaurants %}
                             <button type="button" 
                                     class="list-group-item list-group-item-action"
-                                    onclick="loadRestaurantDetails({{ restaurant.id }})">
+                                    onclick="loadRestaurant({{ restaurant.id }})">
                                 {{ restaurant.name }}
                             </button>
                         {% endfor %}
@@ -87,24 +87,34 @@ function addMenuField(menuName = '', menuPrice = '0.00') {
     document.getElementById('menuList').appendChild(menuDiv);
 }
 
-function loadRestaurantDetails(restaurantId) {
-    fetch(`/api/restaurant/${restaurantId}/details/`)
+function loadRestaurant(restaurantId) {
+    fetch(`/api/restaurant/${restaurantId}/`)
         .then(response => response.json())
         .then(data => {
-            currentRestaurantId = restaurantId;
-            document.getElementById('restaurantId').value = restaurantId;
+            currentRestaurantId = data.id;
             document.getElementById('name').value = data.name;
             document.getElementById('address').value = data.address;
             document.getElementById('operating_hours').value = data.operating_hours;
             
-            // Clear and reload menus
+            // Clear and reload menu fields
             document.getElementById('menuList').innerHTML = '';
-            data.menus.forEach(menu => addMenuField(menu.name, menu.price));
+            data.menus.forEach(menu => {
+                addMenuField(menu.name, menu.price);
+            });
             
             // Update form title and show delete button
             document.getElementById('formTitle').textContent = 'Edit Restaurant';
             document.getElementById('deleteBtn').style.display = 'block';
         });
+}
+
+function resetForm() {
+    currentRestaurantId = null;
+    document.getElementById('restaurantForm').reset();
+    document.getElementById('menuList').innerHTML = '';
+    document.getElementById('formTitle').textContent = 'Add New Restaurant';
+    document.getElementById('deleteBtn').style.display = 'none';
+    addMenuField(); // Add one empty menu field
 }
 
 function deleteRestaurant() {
@@ -131,27 +141,38 @@ document.getElementById('restaurantForm').addEventListener('submit', function(e)
         address: formData.get('address'),
         operating_hours: formData.get('operating_hours'),
         menus: Array.from(document.querySelectorAll('#menuList .input-group')).map(group => ({
-            name: group.querySelector('[name="menu_names[]"]').value,
-            price: parseFloat(group.querySelector('[name="menu_prices[]"]').value)
+            name: group.querySelector('[name="menu_names[]"]').value || 'Default Menu',
+            price: parseFloat(group.querySelector('[name="menu_prices[]"]').value) || 0
         }))
     };
     
-    const url = currentRestaurantId 
-        ? `/api/restaurant/${currentRestaurantId}/update/`
-        : '/api/restaurant/create/';
-    
-    fetch(url, {
-        method: currentRestaurantId ? 'PUT' : 'POST',
+    fetch('/restaurant/create/', {
+        method: 'POST',
         headers: {
             'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json'
         },
         body: JSON.stringify(data)
-    }).then(response => {
-        if (response.ok) {
-            window.location.reload();
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
         }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Success:', data);
+        window.location.reload();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to save restaurant: ' + error.message);
     });
+});
+
+// Add an empty menu field when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    addMenuField();
 });
 </script>
 {% endblock %} 
