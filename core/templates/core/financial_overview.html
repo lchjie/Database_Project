@@ -1,0 +1,138 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Financial Overview</h2>
+    
+    <!-- Total Revenue Card -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Revenue</h5>
+                    <h2 class="display-4">${{ total_revenue|floatformat:2 }}</h2>
+                    <p class="mb-0">Total Orders: {{ total_orders }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Most Valuable Restaurant</h5>
+                    {% if most_valuable_restaurant %}
+                        <h3>{{ most_valuable_restaurant.name }}</h3>
+                        <p class="mb-0">Revenue: ${{ most_valuable_restaurant.revenue|floatformat:2 }}</p>
+                        <p class="mb-0">Orders: {{ most_valuable_restaurant.order_count }}</p>
+                    {% else %}
+                        <p>No data available</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Restaurant Revenue Table -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Restaurant Revenue Breakdown</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Restaurant</th>
+                                    <th>Orders</th>
+                                    <th class="text-end">Revenue</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for restaurant in restaurant_revenues %}
+                                <tr>
+                                    <td>{{ restaurant.name }}</td>
+                                    <td>{{ restaurant.order_count }}</td>
+                                    <td class="text-end">${{ restaurant.revenue|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Student Statistics -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Student Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Total Students
+                            <span class="badge bg-primary rounded-pill">{{ student_stats.total_students }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Active Students
+                            <span class="badge bg-success rounded-pill">{{ student_stats.active_students }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Average Order Value
+                            <span>${{ student_stats.avg_order_value|floatformat:2 }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Popular Items -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Most Popular Items</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Restaurant</th>
+                                    <th>Price</th>
+                                    <th class="text-end">Orders</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in popular_items %}
+                                <tr>
+                                    <td>{{ item.name }}</td>
+                                    <td>{{ item.menu.restaurant.name }}</td>
+                                    <td>${{ item.price }}</td>
+                                    <td class="text-end">{{ item.order_count }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+.display-4 {
+    font-size: 2.5rem;
+    font-weight: 300;
+    line-height: 1.2;
+}
+</style>
+{% endblock %} 

@@ -5,6 +5,16 @@
 <div class="container">
     <h2 class="mb-4">Student Information</h2>
     
+    <!-- Header Row -->
+    <div class="row mb-3 fw-bold border-bottom pb-2">
+        <div class="col-2">Computing ID</div>
+        <div class="col-3">Name</div>
+        <div class="col-3">Email</div>
+        <div class="col-2">Phone</div>
+        <div class="col-2 text-end">Balance</div>
+    </div>
+    
+    <!-- Student List -->
     <div class="accordion" id="studentAccordion">
         {% for student in students %}
         <div class="accordion-item">
@@ -25,22 +35,24 @@
                  data-bs-parent="#studentAccordion">
                 <div class="accordion-body">
                     <h6 class="mb-3">Order History</h6>
-                    {% if student.order_set.all %}
+                    {% if student.orders.all %}
                         <div class="table-responsive">
                             <table class="table table-sm">
                                 <thead>
                                     <tr>
                                         <th>Order ID</th>
                                         <th>Date</th>
+                                        <th>Restaurant</th>
                                         <th>Items</th>
                                         <th class="text-end">Total</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for order in student.order_set.all %}
+                                    {% for order in student.orders.all %}
                                     <tr>
                                         <td>#{{ order.id }}</td>
                                         <td>{{ order.created_at|date:"M d, Y H:i" }}</td>
+                                        <td>{{ order.items.first.menu.restaurant.name }}</td>
                                         <td>
                                             <ul class="list-unstyled mb-0">
                                                 {% for item in order.items.all %}
@@ -81,6 +93,12 @@
     .accordion-button:focus {
         box-shadow: none;
     }
+    .accordion-button:hover {
+        background-color: #f8f9fa;
+    }
+    .row {
+        margin-right: 0;
+        margin-left: 0;
+    }
 </style>
-
 {% endblock %} 

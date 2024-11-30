@@ -1,0 +1,82 @@
+{% extends 'core/base.html' %}
+{% load custom_filters %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Order Management</h2>
+    
+    <div class="accordion" id="restaurantAccordion">
+        {% for restaurant, orders in restaurant_orders.items %}
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading{{ restaurant.id }}">
+                <button class="accordion-button collapsed" type="button" 
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#collapse{{ restaurant.id }}"
+                        aria-expanded="false">
+                    <div class="d-flex justify-content-between w-100">
+                        <span>{{ restaurant.name }}</span>
+                        <span class="badge bg-primary rounded-pill">{{ orders|length }} orders</span>
+                    </div>
+                </button>
+            </h2>
+            
+            <div id="collapse{{ restaurant.id }}" 
+                 class="accordion-collapse collapse" 
+                 data-bs-parent="#restaurantAccordion">
+                <div class="accordion-body">
+                    {% if orders %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Student</th>
+                                        <th>Date</th>
+                                        <th>Items</th>
+                                        <th class="text-end">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in orders %}
+                                    <tr>
+                                        <td>#{{ order.id }}</td>
+                                        <td>{{ order.student.get_full_name }}</td>
+                                        <td>{{ order.created_at|date:"M d, Y H:i" }}</td>
+                                        <td>
+                                            <ul class="list-unstyled mb-0">
+                                                {% for item in order.items.all %}
+                                                <li>{{ item.name }} - ${{ item.price }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        </td>
+                                        <td class="text-end">${{ order.items.all|sum_prices|floatformat:2 }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No orders found for this restaurant.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .accordion-button:not(.collapsed) {
+        background-color: #f8f9fa;
+    }
+    .accordion-button:focus {
+        box-shadow: none;
+    }
+    .accordion-button:hover {
+        background-color: #f8f9fa;
+    }
+    .badge {
+        margin-left: 10px;
+    }
+</style>
+{% endblock %} 
