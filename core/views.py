@@ -7,6 +7,7 @@ import json
 from django.db.models import Sum, Count, DecimalField, F
 from django.db.models.functions import Coalesce, Cast
 from django.db.models.expressions import ExpressionWrapper
+from django.db import models
 
 # Get
 def get_student_by_email(request, email):
@@ -118,22 +119,33 @@ def delete_order(request, order_id):
         return JsonResponse({'error': str(e)}, status=400)
 
 def order_management(request):
-    # Get all restaurants with their related menus and orders
-    restaurants = Restaurant.objects.prefetch_related(
-        'menus',
-        'menus__items',
-    ).all()
+    # Get search query
+    search_query = request.GET.get('search', '')
     
-    # Create a dictionary to store orders by restaurant
-    restaurant_orders = {}
-    for restaurant in restaurants:
-        orders = Order.objects.filter(
-            items__menu__restaurant=restaurant
-        ).distinct().order_by('-created_at')
-        restaurant_orders[restaurant] = orders
+    # Base query with all necessary relations
+    base_query = Order.objects.select_related(
+        'student'
+    ).prefetch_related(
+        'items',
+        'items__menu',
+        'items__menu__restaurant'
+    ).order_by('-created_at')
+    
+    if search_query:
+        # Search for orders by ID, student name, or restaurant name
+        orders = base_query.filter(
+            models.Q(id__icontains=search_query) |
+            models.Q(student__first_name__icontains=search_query) |
+            models.Q(student__last_name__icontains=search_query) |
+            models.Q(items__menu__restaurant__name__icontains=search_query)
+        ).distinct()  # Added distinct to prevent duplicate orders
+    else:
+        # If no search query, get all orders
+        orders = base_query
     
     return render(request, 'core/order_management.html', {
-        'restaurant_orders': restaurant_orders
+        'orders': orders,
+        'search_query': search_query
     })
 
 def restaurant_info(request):
