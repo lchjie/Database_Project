@@ -74,17 +74,20 @@ def create_order(request):
     try:
         data = json.loads(request.body)
         student = get_object_or_404(Student, id=data['student_id'])
-        order = Order.objects.create(student=student)
-        
-        # Add items to order
         items = Item.objects.filter(id__in=data['item_ids'])
+        
+        # Validate all items are from the same restaurant
+        restaurants = set(item.menu.restaurant.id for item in items)
+        if len(restaurants) > 1:
+            return JsonResponse({'error': 'All items must be from the same restaurant'}, status=400)
+        
+        order = Order.objects.create(student=student)
         order.items.set(items)
         
         return JsonResponse({
             'order_id': order.id,
-            'student': order.student.name,
-            'items': [{'id': item.id, 'name': item.name} for item in order.items.all()]
-        }, status=201)
+            'message': 'Order created successfully'
+        })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
@@ -119,10 +122,8 @@ def delete_order(request, order_id):
         return JsonResponse({'error': str(e)}, status=400)
 
 def order_management(request):
-    # Get search query
     search_query = request.GET.get('search', '')
     
-    # Base query with all necessary relations
     base_query = Order.objects.select_related(
         'student'
     ).prefetch_related(
@@ -132,20 +133,24 @@ def order_management(request):
     ).order_by('-created_at')
     
     if search_query:
-        # Search for orders by ID, student name, or restaurant name
         orders = base_query.filter(
             models.Q(id__icontains=search_query) |
             models.Q(student__first_name__icontains=search_query) |
             models.Q(student__last_name__icontains=search_query) |
             models.Q(items__menu__restaurant__name__icontains=search_query)
-        ).distinct()  # Added distinct to prevent duplicate orders
+        ).distinct()
     else:
-        # If no search query, get all orders
         orders = base_query
+    
+    # Add students and restaurants for the create order form
+    students = Student.objects.all()
+    restaurants = Restaurant.objects.all()
     
     return render(request, 'core/order_management.html', {
         'orders': orders,
-        'search_query': search_query
+        'search_query': search_query,
+        'students': students,
+        'restaurants': restaurants
     })
 
 def restaurant_info(request):
@@ -309,3 +314,18 @@ def student_info(request):
 def restaurant_management(request):
     restaurants = Restaurant.objects.all()
     return render(request, 'core/restaurant_management.html', {'restaurants': restaurants})
+
+def get_restaurant_menu_items(request, restaurant_id):
+    restaurant = get_object_or_404(Restaurant, id=restaurant_id)
+    items = Item.objects.filter(menu__restaurant=restaurant)
+    return JsonResponse({
+        'items': [{'id': item.id, 'name': item.name, 'price': float(item.price)} for item in items]
+    })
+
+def get_order(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    return JsonResponse({
+        'order_id': order.id,
+        'restaurant_id': order.items.first().menu.restaurant.id,
+        'selected_items': list(order.items.values_list('id', flat=True))
+    })

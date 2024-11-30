@@ -31,4 +31,9 @@ urlpatterns = [
     path('api/restaurants/create/', views.create_restaurant, name='create_restaurant'),
         path('restaurants/manage/', views.restaurant_management, name='restaurant_management'),
     path('restaurants/info/', views.restaurant_info, name='restaurant_info'),
+    path('api/order/create/', views.create_order, name='create_order'),
+    path('api/order/<int:order_id>/', views.get_order, name='get_order'),
+    path('api/order/<int:order_id>/update/', views.update_order, name='update_order'),
+    path('api/order/<int:order_id>/delete/', views.delete_order, name='delete_order'),
+    path('api/restaurant/<int:restaurant_id>/menu-items/', views.get_restaurant_menu_items, name='get_restaurant_menu_items'),
 ]
