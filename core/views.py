@@ -276,6 +276,12 @@ def update_restaurant(request, restaurant_id):
         restaurant = get_object_or_404(Restaurant, id=restaurant_id)
         data = json.loads(request.body)
         
+        # Check if another restaurant with the same name exists (excluding current restaurant)
+        if Restaurant.objects.filter(name=data['name']).exclude(id=restaurant_id).exists():
+            return JsonResponse({
+                'error': 'A restaurant with this name already exists'
+            }, status=400)
+        
         restaurant.name = data['name']
         restaurant.address = data['address']
         restaurant.operating_hours = data['operating_hours']
@@ -292,7 +298,7 @@ def update_restaurant(request, restaurant_id):
         
         return JsonResponse({'status': 'success'})
     except Exception as e:
-        print('Error updating restaurant:', str(e))  # Add this for debugging
+        print('Error updating restaurant:', str(e))
         return JsonResponse({'error': str(e)}, status=400)
 
 @csrf_exempt

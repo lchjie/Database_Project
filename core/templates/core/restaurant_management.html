@@ -146,8 +146,12 @@ document.getElementById('restaurantForm').addEventListener('submit', function(e)
         }))
     };
     
-    fetch('/restaurant/create/', {
-        method: 'POST',
+    const url = currentRestaurantId 
+        ? `/api/restaurant/${currentRestaurantId}/update/`
+        : '/api/restaurant/create/';
+    
+    fetch(url, {
+        method: currentRestaurantId ? 'PUT' : 'POST',
         headers: {
             'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
             'Content-Type': 'application/json'
