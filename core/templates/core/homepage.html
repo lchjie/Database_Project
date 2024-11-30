@@ -1,0 +1,62 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Order Management</h5>
+                <p class="card-text">Manage student orders and track deliveries.</p>
+                <a href="{% url 'order_management' %}" class="btn btn-primary">Go to Orders</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Restaurant Information</h5>
+                <p class="card-text">View restaurant details and menus.</p>
+                <a href="{% url 'restaurant_info' %}" class="btn btn-primary">View Restaurants</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Restaurant Management</h5>
+                <p class="card-text">Manage restaurant profiles and menus.</p>
+                <a href="{% url 'restaurant_management' %}" class="btn btn-primary">Manage Restaurants</a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Financial Overview</h5>
+                <p class="card-text">View financial reports and analytics.</p>
+                <a href="{% url 'financial_overview' %}" class="btn btn-primary">View Financials</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Student Information</h5>
+                <p class="card-text">View student details and history.</p>
+                <a href="{% url 'student_info' %}" class="btn btn-primary">View Students</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Student Management</h5>
+                <p class="card-text">Manage student profiles and orders.</p>
+                <a href="{% url 'student_management' %}" class="btn btn-primary">Manage Students</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

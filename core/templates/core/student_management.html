@@ -1,0 +1,68 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Student Management</h2>
+    
+    <div class="row">
+        <!-- Existing Students List -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Existing Students</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for student in students %}
+                            <button type="button" 
+                                    class="list-group-item list-group-item-action"
+                                    onclick="loadStudentDetails({{ student.id }})">
+                                {{ student.computing_id }} - {{ student.get_full_name }}
+                            </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add/Edit Student Form -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Add/Edit Student</h5>
+                </div>
+                <div class="card-body">
+                    <form id="studentForm">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="computing_id" class="form-label">Computing ID</label>
+                            <input type="text" class="form-control" id="computing_id" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="first_name" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="first_name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="last_name" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="last_name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="phone_number" class="form-label">Phone Number</label>
+                            <input type="text" class="form-control" id="phone_number" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="account_balance" class="form-label">Account Balance</label>
+                            <input type="number" class="form-control" id="account_balance" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Student</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

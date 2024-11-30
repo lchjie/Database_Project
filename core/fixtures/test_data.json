@@ -1,0 +1,148 @@
+[
+    {
+      "model": "core.student",
+      "pk": 1,
+      "fields": {
+        "computing_id": "ak3mp",
+        "first_name": "Alice",
+        "middle_name": "Kay",
+        "last_name": "Kim",
+        "email": "ak3mp@virginia.edu",
+        "phone_number": "434-555-0101",
+        "account_balance": "100.00"
+      }
+    },
+    {
+      "model": "core.student",
+      "pk": 2,
+      "fields": {
+        "computing_id": "bj4hd",
+        "first_name": "Bob",
+        "middle_name": "James",
+        "last_name": "Roberts",
+        "email": "bj4hd@virginia.edu",
+        "phone_number": "434-555-0102",
+        "account_balance": "150.00"
+      }
+    },
+    {
+      "model": "core.student",
+      "pk": 3,
+      "fields": {
+        "computing_id": "cm5py",
+        "first_name": "Charlie",
+        "middle_name": "Michael",
+        "last_name": "Lee",
+        "email": "cm5py@virginia.edu",
+        "phone_number": "434-555-0103",
+        "account_balance": "75.50"
+      }
+    },
+    {
+      "model": "core.student",
+      "pk": 4,
+      "fields": {
+        "computing_id": "dw2nx",
+        "first_name": "David",
+        "middle_name": "William",
+        "last_name": "Chen",
+        "email": "dw2nx@virginia.edu",
+        "phone_number": "434-555-0104",
+        "account_balance": "200.00"
+      }
+    },
+    {
+      "model": "core.student",
+      "pk": 5,
+      "fields": {
+        "computing_id": "ej7kp",
+        "first_name": "Emma",
+        "middle_name": "Jane",
+        "last_name": "Wilson",
+        "email": "ej7kp@virginia.edu",
+        "phone_number": "434-555-0105",
+        "account_balance": "125.75"
+      }
+    },
+    {
+      "model": "core.restaurant",
+      "pk": 1,
+      "fields": {
+        "name": "The Italian Corner",
+        "address": "123 Main Street, Downtown",
+        "operating_hours": "11:00 AM - 10:00 PM"
+      }
+    },
+    {
+      "model": "core.restaurant",
+      "pk": 2,
+      "fields": {
+        "name": "Sushi Express",
+        "address": "456 Ocean Avenue, Seaside",
+        "operating_hours": "12:00 PM - 9:00 PM"
+      }
+    },
+    {
+      "model": "core.restaurant",
+      "pk": 3,
+      "fields": {
+        "name": "Burger Palace",
+        "address": "789 Park Road, Uptown",
+        "operating_hours": "10:00 AM - 11:00 PM"
+      }
+    },
+    {
+      "model": "core.menu",
+      "pk": 1,
+      "fields": {
+        "name": "Margherita Pizza",
+        "restaurant": 1,
+        "price": "12.99"
+      }
+    },
+    {
+      "model": "core.menu",
+      "pk": 2,
+      "fields": {
+        "name": "Pasta Carbonara",
+        "restaurant": 1,
+        "price": "15.99"
+      }
+    },
+    {
+      "model": "core.menu",
+      "pk": 3,
+      "fields": {
+        "name": "California Roll",
+        "restaurant": 2,
+        "price": "8.99"
+      }
+    },
+    {
+      "model": "core.menu",
+      "pk": 4,
+      "fields": {
+        "name": "Salmon Nigiri",
+        "restaurant": 2,
+        "price": "6.99"
+      }
+    },
+    {
+      "model": "core.menu",
+      "pk": 5,
+      "fields": {
+        "name": "Classic Cheeseburger",
+        "restaurant": 3,
+        "price": "9.99"
+      }
+    },
+    {
+      "model": "core.menu",
+      "pk": 6,
+      "fields": {
+        "name": "Double Bacon Burger",
+        "restaurant": 3,
+        "price": "13.99"
+      }
+    }
+  ]

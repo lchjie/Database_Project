@@ -1,0 +1,50 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Student Information</h2>
+    
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <colgroup>
+                <col style="width: 10%"> <!-- Computing ID -->
+                <col style="width: 25%"> <!-- Name -->
+                <col style="width: 25%"> <!-- Email -->
+                <col style="width: 25%"> <!-- Phone Number -->
+                <col style="width: 15%"> <!-- Account Balance -->
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone Number</th>
+                    <th class="text-end">Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr>
+                    <td class="text-monospace">{{ student.computing_id|upper }}</td>
+                    <td>{{ student.get_full_name }}</td>
+                    <td>{{ student.email }}</td>
+                    <td>{{ student.phone_number }}</td>
+                    <td class="text-end">${{ student.account_balance|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .text-monospace {
+        font-family: monospace;
+        font-size: 1em;
+        letter-spacing: 1px;
+    }
+    .text-end {
+        text-align: right;
+    }
+</style>
+{% endblock %} 

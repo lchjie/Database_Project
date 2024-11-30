@@ -1,0 +1,157 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Restaurant Management</h2>
+    
+    <div class="row">
+        <!-- Existing Restaurants List -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Existing Restaurants</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for restaurant in restaurants %}
+                            <button type="button" 
+                                    class="list-group-item list-group-item-action"
+                                    onclick="loadRestaurantDetails({{ restaurant.id }})">
+                                {{ restaurant.name }}
+                            </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit/Create Form -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0" id="formTitle">Add New Restaurant</h5>
+                </div>
+                <div class="card-body">
+                    <form id="restaurantForm" method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" id="restaurantId" name="restaurant_id">
+                        
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Restaurant Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="address" class="form-label">Address</label>
+                            <textarea class="form-control" id="address" name="address" rows="3" required></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="operating_hours" class="form-label">Operating Hours</label>
+                            <input type="text" class="form-control" id="operating_hours" name="operating_hours" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Menus</label>
+                            <div id="menuList">
+                                <!-- Menu items will be added here dynamically -->
+                            </div>
+                            <button type="button" class="btn btn-secondary btn-sm mt-2" onclick="addMenuField()">
+                                Add Menu
+                            </button>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary">Save Restaurant</button>
+                            <button type="button" class="btn btn-danger" id="deleteBtn" style="display: none;" 
+                                    onclick="deleteRestaurant()">Delete Restaurant</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentRestaurantId = null;
+
+function addMenuField(menuName = '', menuPrice = '0.00') {
+    const menuDiv = document.createElement('div');
+    menuDiv.className = 'input-group mb-2';
+    menuDiv.innerHTML = `
+        <input type="text" class="form-control" name="menu_names[]" value="${menuName}" placeholder="Menu Name">
+        <input type="number" class="form-control" name="menu_prices[]" value="${menuPrice}" step="0.01" min="0" placeholder="Price">
+        <button type="button" class="btn btn-outline-danger" onclick="this.parentElement.remove()">Remove</button>
+    `;
+    document.getElementById('menuList').appendChild(menuDiv);
+}
+
+function loadRestaurantDetails(restaurantId) {
+    fetch(`/api/restaurant/${restaurantId}/details/`)
+        .then(response => response.json())
+        .then(data => {
+            currentRestaurantId = restaurantId;
+            document.getElementById('restaurantId').value = restaurantId;
+            document.getElementById('name').value = data.name;
+            document.getElementById('address').value = data.address;
+            document.getElementById('operating_hours').value = data.operating_hours;
+            
+            // Clear and reload menus
+            document.getElementById('menuList').innerHTML = '';
+            data.menus.forEach(menu => addMenuField(menu.name, menu.price));
+            
+            // Update form title and show delete button
+            document.getElementById('formTitle').textContent = 'Edit Restaurant';
+            document.getElementById('deleteBtn').style.display = 'block';
+        });
+}
+
+function deleteRestaurant() {
+    if (!currentRestaurantId || !confirm('Are you sure you want to delete this restaurant?')) return;
+    
+    fetch(`/api/restaurant/${currentRestaurantId}/delete/`, {
+        method: 'DELETE',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    }).then(response => {
+        if (response.ok) {
+            window.location.reload();
+        }
+    });
+}
+
+document.getElementById('restaurantForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {
+        name: formData.get('name'),
+        address: formData.get('address'),
+        operating_hours: formData.get('operating_hours'),
+        menus: Array.from(document.querySelectorAll('#menuList .input-group')).map(group => ({
+            name: group.querySelector('[name="menu_names[]"]').value,
+            price: parseFloat(group.querySelector('[name="menu_prices[]"]').value)
+        }))
+    };
+    
+    const url = currentRestaurantId 
+        ? `/api/restaurant/${currentRestaurantId}/update/`
+        : '/api/restaurant/create/';
+    
+    fetch(url, {
+        method: currentRestaurantId ? 'PUT' : 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    }).then(response => {
+        if (response.ok) {
+            window.location.reload();
+        }
+    });
+});
+</script>
+{% endblock %} 
