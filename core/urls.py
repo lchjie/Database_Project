@@ -3,6 +3,9 @@ from . import views  # Import views from the core app
 
 urlpatterns = [
     # Define your app-specific routes here
+    path('restaurants/manage/', views.restaurant_management, name='restaurant_management'),
+    path('restaurants/info/', views.restaurant_info, name='restaurant_info'),
+    path('restaurants/', views.restaurant_info, name='restaurant_list'),
     path('student/<str:email>/', views.get_student_by_email, name='get_student_by_email'),
     path('item/<str:name>/', views.get_item_by_name, name='get_item_by_name'),
     path('order/<int:order_id>/', views.get_order_by_id, name='get_order_by_id'),
@@ -26,4 +29,6 @@ urlpatterns = [
     path('api/restaurants/info/', views.restaurant_info, name='restaurant_info'),
     path('api/financial/', views.financial_overview, name='financial_overview'),
     path('api/restaurants/create/', views.create_restaurant, name='create_restaurant'),
+        path('restaurants/manage/', views.restaurant_management, name='restaurant_management'),
+    path('restaurants/info/', views.restaurant_info, name='restaurant_info'),
 ]

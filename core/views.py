@@ -207,3 +207,7 @@ def get_student_details(request, student_id):
 def student_info(request):
     students = Student.objects.all()
     return render(request, 'core/student_info.html', {'students': students})
+
+def restaurant_management(request):
+    restaurants = Restaurant.objects.all()
+    return render(request, 'core/restaurant_management.html', {'restaurants': restaurants})
