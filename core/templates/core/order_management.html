@@ -84,12 +84,15 @@
                 </div>
                 <div class="modal-body">
                     <form id="createOrderForm">
+                        {% csrf_token %}
                         <div class="mb-3">
                             <label class="form-label">Student</label>
                             <select class="form-select" id="studentSelect" required>
                                 <option value="">Select Student</option>
                                 {% for student in students %}
-                                <option value="{{ student.id }}">{{ student.get_full_name }}</option>
+                                <option value="{{ student.id }}" data-balance="{{ student.account_balance }}">
+                                    {{ student.get_full_name }} (Balance: ${{ student.account_balance|floatformat:2 }})
+                                </option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -144,26 +147,89 @@
 // Add necessary JavaScript functions for handling the modals and CRUD operations
 function loadMenuItems() {
     const restaurantId = document.getElementById('restaurantSelect').value;
-    if (!restaurantId) return;
+    if (!restaurantId) {
+        document.getElementById('menuItemsContainer').innerHTML = '';
+        return;
+    }
 
     fetch(`/api/restaurant/${restaurantId}/menu-items/`)
         .then(response => response.json())
         .then(data => {
             const container = document.getElementById('menuItemsContainer');
-            container.innerHTML = data.items.map(item => `
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" value="${item.id}" name="menu_items">
-                    <label class="form-check-label">
-                        ${item.name} - $${item.price}
-                    </label>
+            container.innerHTML = `
+                <div class="mb-3">
+                    <label class="form-label">Available Menus</label>
+                    ${data.menus.map(menu => `
+                        <div class="form-check">
+                            <input class="form-check-input menu-item" 
+                                   type="checkbox" 
+                                   value="${menu.id}" 
+                                   data-price="${menu.price}"
+                                   name="menu_items"
+                                   onchange="updateTotalPrice()">
+                            <label class="form-check-label">
+                                ${menu.name} - $${menu.price.toFixed(2)}
+                            </label>
+                        </div>
+                    `).join('')}
                 </div>
-            `).join('');
+                <div class="alert alert-info">
+                    Total Price: $<span id="totalPrice">0.00</span>
+                </div>
+            `;
+        })
+        .catch(error => {
+            console.error('Error loading menus:', error);
+            document.getElementById('menuItemsContainer').innerHTML = `
+                <div class="alert alert-danger">
+                    Failed to load menus. Please try again.
+                </div>
+            `;
         });
+}
+
+function updateTotalPrice() {
+    const selectedItems = document.querySelectorAll('input[name="menu_items"]:checked');
+    const total = Array.from(selectedItems)
+        .reduce((sum, item) => sum + parseFloat(item.dataset.price), 0);
+    document.getElementById('totalPrice').textContent = total.toFixed(2);
+
+    // Check if total exceeds student balance
+    const studentSelect = document.getElementById('studentSelect');
+    if (studentSelect.value) {
+        const studentBalance = parseFloat(studentSelect.selectedOptions[0].dataset.balance);
+        const totalPriceElement = document.getElementById('totalPrice');
+        const submitButton = document.querySelector('[onclick="submitOrder()"]');
+        
+        if (total > studentBalance) {
+            totalPriceElement.classList.add('text-danger');
+            submitButton.disabled = true;
+            totalPriceElement.parentElement.innerHTML += `
+                <div class="text-danger">Insufficient balance</div>
+            `;
+        } else {
+            totalPriceElement.classList.remove('text-danger');
+            submitButton.disabled = false;
+            const warningDiv = totalPriceElement.parentElement.querySelector('.text-danger');
+            if (warningDiv) warningDiv.remove();
+        }
+    }
 }
 
 function submitOrder() {
     const studentId = document.getElementById('studentSelect').value;
-    const selectedItems = Array.from(document.querySelectorAll('input[name="menu_items"]:checked')).map(cb => cb.value);
+    const selectedMenus = Array.from(document.querySelectorAll('input[name="menu_items"]:checked')).map(cb => cb.value);
+    const totalPrice = parseFloat(document.getElementById('totalPrice').textContent);
+
+    if (!studentId) {
+        alert('Please select a student');
+        return;
+    }
+
+    if (selectedMenus.length === 0) {
+        alert('Please select at least one menu');
+        return;
+    }
 
     fetch('/api/order/create/', {
         method: 'POST',
@@ -173,12 +239,21 @@ function submitOrder() {
         },
         body: JSON.stringify({
             student_id: studentId,
-            item_ids: selectedItems
+            menu_ids: selectedMenus
         })
-    }).then(response => {
-        if (response.ok) {
-            window.location.reload();
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => Promise.reject(err));
         }
+        return response.json();
+    })
+    .then(data => {
+        alert(`Order created successfully! New balance: $${data.new_balance}`);
+        window.location.reload();
+    })
+    .catch(error => {
+        alert('Failed to create order: ' + (error.error || error.message));
     });
 }
 
@@ -238,10 +313,20 @@ function deleteOrder(orderId) {
             headers: {
                 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
             }
-        }).then(response => {
-            if (response.ok) {
-                window.location.reload();
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => Promise.reject(err));
             }
+            return response.json();
+        })
+        .then(data => {
+            alert(`Order deleted successfully. Refund amount: $${data.refund_amount}`);
+            window.location.reload();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to delete order: ' + (error.error || error.message));
         });
     }
 }
@@ -261,4 +346,15 @@ function deleteOrder(orderId) {
         margin-left: 10px;
     }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const createOrderModal = document.getElementById('createOrderModal');
+    createOrderModal.addEventListener('show.bs.modal', function() {
+        document.getElementById('studentSelect').value = '';
+        document.getElementById('restaurantSelect').value = '';
+        document.getElementById('menuItemsContainer').innerHTML = '';
+    });
+});
+</script>
 {% endblock %} 

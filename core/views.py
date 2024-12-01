@@ -74,39 +74,85 @@ def create_order(request):
     try:
         data = json.loads(request.body)
         student = get_object_or_404(Student, id=data['student_id'])
-        items = Item.objects.filter(id__in=data['item_ids'])
+        menus = Menu.objects.filter(id__in=data['menu_ids'])
         
-        # Validate all items are from the same restaurant
-        restaurants = set(item.menu.restaurant.id for item in items)
+        # Calculate total price from menus
+        total_price = sum(menu.price for menu in menus)
+        
+        # Check if student has sufficient balance
+        if student.account_balance < total_price:
+            return JsonResponse({
+                'error': 'Insufficient account balance'
+            }, status=400)
+        
+        # Validate all menus are from the same restaurant
+        restaurants = set(menu.restaurant.id for menu in menus)
         if len(restaurants) > 1:
-            return JsonResponse({'error': 'All items must be from the same restaurant'}, status=400)
+            return JsonResponse({
+                'error': 'All menus must be from the same restaurant'
+            }, status=400)
         
+        # Create order
         order = Order.objects.create(student=student)
-        order.items.set(items)
+        
+        # Create items from menus and add them to order
+        for menu in menus:
+            item = Item.objects.create(
+                name=menu.name,
+                price=menu.price,
+                menu=menu
+            )
+            order.items.add(item)
+        
+        # Deduct the total price from student's balance
+        student.account_balance -= total_price
+        student.save()
         
         return JsonResponse({
             'order_id': order.id,
-            'message': 'Order created successfully'
+            'message': 'Order created successfully',
+            'new_balance': str(student.account_balance)
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
 @csrf_exempt
-@require_http_methods(["PUT", "PATCH"])
+@require_http_methods(["PUT"])
 def update_order(request, order_id):
     try:
         data = json.loads(request.body)
         order = get_object_or_404(Order, id=order_id)
+        new_items = Item.objects.filter(id__in=data['item_ids'])
         
-        # Update items if provided
-        if 'item_ids' in data:
-            items = Item.objects.filter(id__in=data['item_ids'])
-            order.items.set(items)
+        # Calculate price difference
+        old_total = sum(item.price for item in order.items.all())
+        new_total = sum(item.price for item in new_items)
+        price_difference = new_total - old_total
+        
+        # Check if student has sufficient balance for price increase
+        if price_difference > 0 and order.student.account_balance < price_difference:
+            return JsonResponse({
+                'error': 'Insufficient account balance for order update'
+            }, status=400)
+        
+        # Validate all new items are from the same restaurant
+        restaurants = set(item.menu.restaurant.id for item in new_items)
+        if len(restaurants) > 1:
+            return JsonResponse({
+                'error': 'All items must be from the same restaurant'
+            }, status=400)
+        
+        # Update student balance
+        student = order.student
+        student.account_balance -= price_difference
+        student.save()
+        
+        # Update order items
+        order.items.set(new_items)
         
         return JsonResponse({
-            'order_id': order.id,
-            'student': order.student.name,
-            'items': [{'id': item.id, 'name': item.name} for item in order.items.all()]
+            'message': 'Order updated successfully',
+            'new_balance': str(student.account_balance)
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
@@ -116,10 +162,28 @@ def update_order(request, order_id):
 def delete_order(request, order_id):
     try:
         order = get_object_or_404(Order, id=order_id)
+        
+        # Calculate refund amount before deleting the order
+        refund_amount = sum(item.price for item in order.items.all())
+        
+        # Update student's balance with refund
+        student = order.student
+        student.account_balance += refund_amount
+        student.save()
+        
+        # Delete the order
         order.delete()
-        return JsonResponse({'message': 'Order deleted successfully'})
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Order deleted successfully',
+            'refund_amount': str(refund_amount),
+            'new_balance': str(student.account_balance)
+        })
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=400)
+        return JsonResponse({
+            'error': str(e)
+        }, status=400)
 
 def order_management(request):
     search_query = request.GET.get('search', '')
@@ -335,9 +399,9 @@ def student_info(request):
 
 def get_restaurant_menu_items(request, restaurant_id):
     restaurant = get_object_or_404(Restaurant, id=restaurant_id)
-    items = Item.objects.filter(menu__restaurant=restaurant)
+    menus = Menu.objects.filter(restaurant=restaurant)
     return JsonResponse({
-        'items': [{'id': item.id, 'name': item.name, 'price': float(item.price)} for item in items]
+        'menus': [{'id': menu.id, 'name': menu.name, 'price': float(menu.price)} for menu in menus]
     })
 
 def get_order(request, order_id):
