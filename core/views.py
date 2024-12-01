@@ -548,3 +548,26 @@ def search_restaurants(request):
                 for r in restaurants
             ]
         })
+
+def search_students(request):
+    query = request.GET.get('query', '').lower()
+    students = Student.objects.all()
+    
+    if query:
+        students = students.filter(
+            models.Q(computing_id__icontains=query) |
+            models.Q(first_name__icontains=query) |
+            models.Q(middle_name__icontains=query) |
+            models.Q(last_name__icontains=query)
+        )
+    
+    return JsonResponse({
+        'students': [{
+            'id': student.id,
+            'computing_id': student.computing_id,
+            'first_name': student.first_name,
+            'middle_name': student.middle_name,
+            'last_name': student.last_name,
+            'account_balance': str(student.account_balance)
+        } for student in students]
+    })

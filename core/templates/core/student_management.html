@@ -8,8 +8,14 @@
         <!-- Existing Students List -->
         <div class="col-md-4">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Existing Students</h5>
+                    <form id="searchForm" class="d-flex gap-2">
+                        <input type="text" 
+                               class="form-control form-control-sm" 
+                               id="searchInput" 
+                               placeholder="Search by Computing ID or Name...">
+                    </form>
                 </div>
                 <div class="card-body">
                     <div class="list-group">
@@ -160,5 +166,49 @@ document.getElementById('studentForm').addEventListener('submit', function(e) {
 
 // Initialize form
 document.addEventListener('DOMContentLoaded', resetForm);
+
+function searchStudents() {
+    const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+    
+    fetch(`/api/students/search/?query=${encodeURIComponent(searchQuery)}`)
+        .then(response => response.json())
+        .then(data => {
+            const listGroup = document.querySelector('.list-group');
+            listGroup.innerHTML = data.students.map(student => `
+                <button type="button" 
+                        class="list-group-item list-group-item-action"
+                        onclick="loadStudent(${student.id})">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>${student.computing_id}</strong> - 
+                            ${student.first_name} ${student.middle_name ? student.middle_name + ' ' : ''}${student.last_name}
+                        </div>
+                        <div>
+                            Balance: $${parseFloat(student.account_balance).toFixed(2)}
+                        </div>
+                    </div>
+                </button>
+            `).join('');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+}
+
+// Add event listener for search input with debouncing
+document.getElementById('searchInput').addEventListener('input', debounce(searchStudents, 300));
+
+// Debounce function to prevent too many API calls
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
 </script>
 {% endblock %} 
