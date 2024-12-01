@@ -111,7 +111,7 @@
                                 {% for item in popular_items %}
                                 <tr>
                                     <td>{{ item.name }}</td>
-                                    <td>{{ item.menu.restaurant.name }}</td>
+                                    <td>{{ item.menu__restaurant__name }}</td>
                                     <td>${{ item.price }}</td>
                                     <td class="text-end">{{ item.order_count }}</td>
                                 </tr>

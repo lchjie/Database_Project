@@ -285,7 +285,11 @@ def financial_overview(request):
     most_valuable_restaurant = restaurant_revenues[0] if restaurant_revenues else None
     
     # Find the most popular items (favorite orders)
-    popular_items = Item.objects.annotate(
+    popular_items = Item.objects.values(
+        'name', 
+        'menu__restaurant__name',
+        'price'
+    ).annotate(
         order_count=Count('orders')
     ).order_by('-order_count')[:5]
     
