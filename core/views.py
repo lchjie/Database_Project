@@ -389,9 +389,30 @@ def update_restaurant(request, restaurant_id):
 @csrf_exempt
 @require_http_methods(["DELETE"])
 def delete_restaurant(request, restaurant_id):
-    restaurant = get_object_or_404(Restaurant, id=restaurant_id)
-    restaurant.delete()
-    return JsonResponse({'status': 'success'})
+    try:
+        restaurant = get_object_or_404(Restaurant, id=restaurant_id)
+        
+        # Check if there are any active orders for this restaurant
+        active_orders = Order.objects.filter(
+            items__menu__restaurant=restaurant
+        ).distinct()
+        
+        if active_orders.exists():
+            return JsonResponse({
+                'error': 'Cannot delete restaurant with active orders'
+            }, status=400)
+        
+        # Delete the restaurant and all associated menus and items
+        restaurant.delete()
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Restaurant deleted successfully'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'error': str(e)
+        }, status=400)
 
 def get_student_details(request, student_id):
     try:
