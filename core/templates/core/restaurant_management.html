@@ -8,8 +8,14 @@
         <!-- Existing Restaurants List -->
         <div class="col-md-4">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Existing Restaurants</h5>
+                    <form id="searchForm" class="d-flex gap-2">
+                        <input type="text" 
+                               class="form-control form-control-sm" 
+                               id="searchInput" 
+                               placeholder="Search restaurants or menus...">
+                    </form>
                 </div>
                 <div class="card-body">
                     <div class="list-group">
@@ -195,5 +201,46 @@ document.getElementById('restaurantForm').addEventListener('submit', function(e)
 document.addEventListener('DOMContentLoaded', function() {
     addMenuField();
 });
+
+function searchRestaurants() {
+    const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+    
+    fetch(`/api/restaurants/search/?query=${encodeURIComponent(searchQuery)}`)
+        .then(response => response.json())
+        .then(data => {
+            const listGroup = document.querySelector('.list-group');
+            listGroup.innerHTML = data.restaurants.map(restaurant => `
+                <button type="button" 
+                        class="list-group-item list-group-item-action"
+                        onclick="loadRestaurant(${restaurant.id})">
+                    <div class="d-flex flex-column">
+                        <strong>${restaurant.name}</strong>
+                        ${restaurant.matching_menus ? 
+                            `<small class="text-muted">Menus: ${restaurant.matching_menus.join(', ')}</small>` 
+                            : ''}
+                    </div>
+                </button>
+            `).join('');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+}
+
+// Add event listener for search input
+document.getElementById('searchInput').addEventListener('input', debounce(searchRestaurants, 300));
+
+// Debounce function to prevent too many API calls
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
 </script>
 {% endblock %} 

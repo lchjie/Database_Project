@@ -16,6 +16,7 @@ urlpatterns = [
     path('api/student/create/', views.create_student, name='create_student'),
     path('api/student/<int:student_id>/update/', views.update_student, name='update_student'),
     path('api/financial/', views.financial_overview, name='financial_overview'),
+    path('api/restaurants/search/', views.search_restaurants, name='search_restaurants'),
 
     # Web pages
     path('', views.homepage, name='homepage'),

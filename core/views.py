@@ -519,3 +519,32 @@ def delete_student(request, student_id):
         return JsonResponse({'message': 'Student deleted successfully'})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
+
+def search_restaurants(request):
+    query = request.GET.get('query', '').lower()
+    restaurants = Restaurant.objects.all()
+    
+    if query:
+        # Search in restaurant names and menu names
+        matching_restaurants = []
+        for restaurant in restaurants:
+            matching_menus = [
+                menu.name for menu in restaurant.menus.filter(name__icontains=query)
+            ]
+            
+            if query in restaurant.name.lower() or matching_menus:
+                matching_restaurants.append({
+                    'id': restaurant.id,
+                    'name': restaurant.name,
+                    'matching_menus': matching_menus if matching_menus else None
+                })
+        
+        return JsonResponse({'restaurants': matching_restaurants})
+    else:
+        # Return all restaurants if no query
+        return JsonResponse({
+            'restaurants': [
+                {'id': r.id, 'name': r.name, 'matching_menus': None} 
+                for r in restaurants
+            ]
+        })
