@@ -347,3 +347,58 @@ def get_order(request, order_id):
         'restaurant_id': order.items.first().menu.restaurant.id,
         'selected_items': list(order.items.values_list('id', flat=True))
     })
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def create_student(request):
+    try:
+        data = json.loads(request.body)
+        
+        # Create student
+        student = Student.objects.create(
+            computing_id=data['computing_id'],
+            first_name=data['first_name'],
+            middle_name=data.get('middle_name', ''),
+            last_name=data['last_name'],
+            phone_number=data.get('phone_number', ''),
+            account_balance=data['account_balance']
+        )
+        
+        return JsonResponse({
+            'id': student.id,
+            'message': 'Student created successfully'
+        }, status=201)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+@csrf_exempt
+@require_http_methods(["PUT"])
+def update_student(request, student_id):
+    try:
+        student = get_object_or_404(Student, id=student_id)
+        data = json.loads(request.body)
+        
+        # Update student fields
+        student.first_name = data['first_name']
+        student.middle_name = data.get('middle_name', '')
+        student.last_name = data['last_name']
+        student.phone_number = data.get('phone_number', '')
+        student.account_balance = data['account_balance']
+        student.save()
+        
+        return JsonResponse({
+            'id': student.id,
+            'message': 'Student updated successfully'
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def delete_student(request, student_id):
+    try:
+        student = get_object_or_404(Student, id=student_id)
+        student.delete()
+        return JsonResponse({'message': 'Student deleted successfully'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)

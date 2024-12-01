@@ -16,7 +16,7 @@
                         {% for student in students %}
                             <button type="button" 
                                     class="list-group-item list-group-item-action"
-                                    onclick="loadStudentDetails({{ student.id }})">
+                                    onclick="loadStudent({{ student.id }})">
                                 {{ student.computing_id }} - {{ student.get_full_name }}
                             </button>
                         {% endfor %}
@@ -29,40 +29,136 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">Add/Edit Student</h5>
+                    <h5 class="mb-0" id="formTitle">Add New Student</h5>
                 </div>
                 <div class="card-body">
                     <form id="studentForm">
                         {% csrf_token %}
+                        <input type="hidden" id="studentId">
                         <div class="mb-3">
                             <label for="computing_id" class="form-label">Computing ID</label>
-                            <input type="text" class="form-control" id="computing_id" required>
+                            <input type="text" class="form-control" id="computing_id" name="computing_id" required 
+                                   pattern="[a-zA-Z0-9]{6}" title="Must be exactly 6 alphanumeric characters">
                         </div>
                         <div class="mb-3">
                             <label for="first_name" class="form-label">First Name</label>
-                            <input type="text" class="form-control" id="first_name" required>
+                            <input type="text" class="form-control" id="first_name" name="first_name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="middle_name" class="form-label">Middle Name</label>
+                            <input type="text" class="form-control" id="middle_name" name="middle_name">
                         </div>
                         <div class="mb-3">
                             <label for="last_name" class="form-label">Last Name</label>
-                            <input type="text" class="form-control" id="last_name" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" required>
+                            <input type="text" class="form-control" id="last_name" name="last_name" required>
                         </div>
                         <div class="mb-3">
                             <label for="phone_number" class="form-label">Phone Number</label>
-                            <input type="text" class="form-control" id="phone_number" required>
+                            <input type="tel" class="form-control" id="phone_number" name="phone_number">
                         </div>
                         <div class="mb-3">
                             <label for="account_balance" class="form-label">Account Balance</label>
-                            <input type="number" class="form-control" id="account_balance" required>
+                            <input type="number" class="form-control" id="account_balance" name="account_balance" 
+                                   step="0.01" min="0" value="0.00" required>
                         </div>
-                        <button type="submit" class="btn btn-primary">Save Student</button>
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary">Save Student</button>
+                            <button type="button" class="btn btn-danger" id="deleteBtn" style="display: none;" 
+                                    onclick="deleteStudent()">Delete Student</button>
+                        </div>
                     </form>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+let currentStudentId = null;
+
+function loadStudent(studentId) {
+    fetch(`/api/student/${studentId}/details/`)
+        .then(response => response.json())
+        .then(data => {
+            currentStudentId = studentId;
+            document.getElementById('computing_id').value = data.computing_id;
+            document.getElementById('first_name').value = data.first_name;
+            document.getElementById('middle_name').value = data.middle_name || '';
+            document.getElementById('last_name').value = data.last_name;
+            document.getElementById('phone_number').value = data.phone_number;
+            document.getElementById('account_balance').value = data.account_balance;
+            
+            document.getElementById('formTitle').textContent = 'Edit Student';
+            document.getElementById('deleteBtn').style.display = 'block';
+            document.getElementById('computing_id').readOnly = true;
+        });
+}
+
+function resetForm() {
+    currentStudentId = null;
+    document.getElementById('studentForm').reset();
+    document.getElementById('formTitle').textContent = 'Add New Student';
+    document.getElementById('deleteBtn').style.display = 'none';
+    document.getElementById('computing_id').readOnly = false;
+}
+
+function deleteStudent() {
+    if (!currentStudentId || !confirm('Are you sure you want to delete this student?')) return;
+    
+    fetch(`/api/student/${currentStudentId}/delete/`, {
+        method: 'DELETE',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    }).then(response => {
+        if (response.ok) {
+            window.location.reload();
+        }
+    });
+}
+
+document.getElementById('studentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {
+        computing_id: formData.get('computing_id'),
+        first_name: formData.get('first_name'),
+        middle_name: formData.get('middle_name'),
+        last_name: formData.get('last_name'),
+        phone_number: formData.get('phone_number'),
+        account_balance: parseFloat(formData.get('account_balance'))
+    };
+    
+    const url = currentStudentId 
+        ? `/api/student/${currentStudentId}/update/`
+        : '/api/student/create/';
+    
+    fetch(url, {
+        method: currentStudentId ? 'PUT' : 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => Promise.reject(err));
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Success:', data);
+        window.location.reload();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to save student: ' + (error.error || error.message));
+    });
+});
+
+// Initialize form
+document.addEventListener('DOMContentLoaded', resetForm);
+</script>
 {% endblock %} 
