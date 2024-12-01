@@ -129,6 +129,7 @@
                 <div class="modal-body">
                     <form id="editOrderForm">
                         <input type="hidden" id="editOrderId">
+                        <input type="hidden" id="originalTotal">
                         <div id="editMenuItemsContainer" class="mb-3">
                             <!-- Menu items will be loaded here -->
                         </div>
@@ -160,16 +161,27 @@ function loadMenuItems() {
                 <div class="mb-3">
                     <label class="form-label">Available Menus</label>
                     ${data.menus.map(menu => `
-                        <div class="form-check">
-                            <input class="form-check-input menu-item" 
-                                   type="checkbox" 
-                                   value="${menu.id}" 
-                                   data-price="${menu.price}"
-                                   name="menu_items"
-                                   onchange="updateTotalPrice()">
-                            <label class="form-check-label">
-                                ${menu.name} - $${menu.price.toFixed(2)}
-                            </label>
+                        <div class="form-check d-flex align-items-center gap-3">
+                            <div>
+                                <input class="form-check-input menu-item" 
+                                       type="checkbox" 
+                                       value="${menu.id}" 
+                                       data-price="${menu.price}"
+                                       name="menu_items"
+                                       onchange="updateTotalPrice()">
+                                <label class="form-check-label">
+                                    ${menu.name} - $${menu.price.toFixed(2)}
+                                </label>
+                            </div>
+                            <div class="input-group" style="width: 120px;">
+                                <input type="number" 
+                                       class="form-control form-control-sm quantity-input" 
+                                       value="1" 
+                                       min="1" 
+                                       data-menu-id="${menu.id}"
+                                       onchange="updateTotalPrice()"
+                                       ${!document.querySelector(`input[value="${menu.id}"]`)?.checked ? 'disabled' : ''}>
+                            </div>
                         </div>
                     `).join('')}
                 </div>
@@ -177,21 +189,28 @@ function loadMenuItems() {
                     Total Price: $<span id="totalPrice">0.00</span>
                 </div>
             `;
-        })
-        .catch(error => {
-            console.error('Error loading menus:', error);
-            document.getElementById('menuItemsContainer').innerHTML = `
-                <div class="alert alert-danger">
-                    Failed to load menus. Please try again.
-                </div>
-            `;
+
+            // Add event listeners for checkboxes to enable/disable quantity inputs
+            document.querySelectorAll('.menu-item').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const menuId = this.value;
+                    const quantityInput = document.querySelector(`input[data-menu-id="${menuId}"]`);
+                    quantityInput.disabled = !this.checked;
+                    if (!this.checked) quantityInput.value = 1;
+                    updateTotalPrice();
+                });
+            });
         });
 }
 
 function updateTotalPrice() {
     const selectedItems = document.querySelectorAll('input[name="menu_items"]:checked');
     const total = Array.from(selectedItems)
-        .reduce((sum, item) => sum + parseFloat(item.dataset.price), 0);
+        .reduce((sum, item) => {
+            const menuId = item.value;
+            const quantity = parseInt(document.querySelector(`input[data-menu-id="${menuId}"]`).value) || 1;
+            return sum + (parseFloat(item.dataset.price) * quantity);
+        }, 0);
     document.getElementById('totalPrice').textContent = total.toFixed(2);
 
     // Check if total exceeds student balance
@@ -218,7 +237,14 @@ function updateTotalPrice() {
 
 function submitOrder() {
     const studentId = document.getElementById('studentSelect').value;
-    const selectedMenus = Array.from(document.querySelectorAll('input[name="menu_items"]:checked')).map(cb => cb.value);
+    const selectedMenus = Array.from(document.querySelectorAll('input[name="menu_items"]:checked')).map(cb => {
+        const menuId = cb.value;
+        const quantity = parseInt(document.querySelector(`input[data-menu-id="${menuId}"]`).value) || 1;
+        return {
+            menu_id: menuId,
+            quantity: quantity
+        };
+    });
     const totalPrice = parseFloat(document.getElementById('totalPrice').textContent);
 
     if (!studentId) {
@@ -239,7 +265,7 @@ function submitOrder() {
         },
         body: JSON.stringify({
             student_id: studentId,
-            menu_ids: selectedMenus
+            menu_items: selectedMenus
         })
     })
     .then(response => {
@@ -262,9 +288,9 @@ function editOrder(orderId) {
         .then(response => response.json())
         .then(data => {
             document.getElementById('editOrderId').value = orderId;
+            document.getElementById('originalTotal').value = data.total_price;
             const modal = new bootstrap.Modal(document.getElementById('editOrderModal'));
             modal.show();
-            // Load menu items for editing
             loadEditMenuItems(data.restaurant_id, data.selected_items);
         });
 }
@@ -274,21 +300,92 @@ function loadEditMenuItems(restaurantId, selectedItems) {
         .then(response => response.json())
         .then(data => {
             const container = document.getElementById('editMenuItemsContainer');
-            container.innerHTML = data.items.map(item => `
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" value="${item.id}" 
-                           name="edit_menu_items" ${selectedItems.includes(item.id) ? 'checked' : ''}>
-                    <label class="form-check-label">
-                        ${item.name} - $${item.price}
-                    </label>
+            container.innerHTML = `
+                <div class="mb-3">
+                    <label class="form-label">Edit Menu Items</label>
+                    ${data.menus.map(menu => `
+                        <div class="form-check d-flex align-items-center gap-3">
+                            <div>
+                                <input class="form-check-input edit-menu-item" 
+                                       type="checkbox" 
+                                       value="${menu.id}" 
+                                       data-price="${menu.price}"
+                                       name="edit_menu_items"
+                                       onchange="updateEditTotalPrice()"
+                                       ${selectedItems.some(item => item.menu_id === menu.id) ? 'checked' : ''}>
+                                <label class="form-check-label">
+                                    ${menu.name} - $${menu.price.toFixed(2)}
+                                </label>
+                            </div>
+                            <div class="input-group" style="width: 120px;">
+                                <input type="number" 
+                                       class="form-control form-control-sm edit-quantity-input" 
+                                       value="${selectedItems.find(item => item.menu_id === menu.id)?.quantity || 1}" 
+                                       min="1" 
+                                       data-menu-id="${menu.id}"
+                                       onchange="updateEditTotalPrice()"
+                                       ${!selectedItems.some(item => item.menu_id === menu.id) ? 'disabled' : ''}>
+                            </div>
+                        </div>
+                    `).join('')}
                 </div>
-            `).join('');
+                <div class="alert alert-info">
+                    Total Price: $<span id="editTotalPrice">0.00</span>
+                    <div id="priceChange"></div>
+                </div>
+            `;
+
+            // Add event listeners for checkboxes
+            document.querySelectorAll('.edit-menu-item').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const menuId = this.value;
+                    const quantityInput = document.querySelector(`input[data-menu-id="${menuId}"].edit-quantity-input`);
+                    quantityInput.disabled = !this.checked;
+                    if (!this.checked) quantityInput.value = 1;
+                    updateEditTotalPrice();
+                });
+            });
+
+            updateEditTotalPrice();
         });
+}
+
+function updateEditTotalPrice() {
+    const selectedItems = document.querySelectorAll('input[name="edit_menu_items"]:checked');
+    const total = Array.from(selectedItems)
+        .reduce((sum, item) => {
+            const menuId = item.value;
+            const quantity = parseInt(document.querySelector(`input[data-menu-id="${menuId}"].edit-quantity-input`).value) || 1;
+            return sum + (parseFloat(item.dataset.price) * quantity);
+        }, 0);
+    
+    const totalElement = document.getElementById('editTotalPrice');
+    totalElement.textContent = total.toFixed(2);
+
+    // Calculate and display price difference
+    const originalTotal = parseFloat(document.getElementById('originalTotal').value || 0);
+    const difference = total - originalTotal;
+    const priceChangeElement = document.getElementById('priceChange');
+    
+    if (difference !== 0) {
+        priceChangeElement.innerHTML = difference > 0 
+            ? `<div class="text-danger">Additional charge: $${difference.toFixed(2)}</div>`
+            : `<div class="text-success">Refund amount: $${Math.abs(difference).toFixed(2)}</div>`;
+    } else {
+        priceChangeElement.innerHTML = '';
+    }
 }
 
 function updateOrder() {
     const orderId = document.getElementById('editOrderId').value;
-    const selectedItems = Array.from(document.querySelectorAll('input[name="edit_menu_items"]:checked')).map(cb => cb.value);
+    const selectedMenus = Array.from(document.querySelectorAll('input[name="edit_menu_items"]:checked')).map(cb => {
+        const menuId = cb.value;
+        const quantity = parseInt(document.querySelector(`input[data-menu-id="${menuId}"].edit-quantity-input`).value) || 1;
+        return {
+            menu_id: menuId,
+            quantity: quantity
+        };
+    });
 
     fetch(`/api/order/${orderId}/update/`, {
         method: 'PUT',
@@ -297,12 +394,21 @@ function updateOrder() {
             'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
         },
         body: JSON.stringify({
-            item_ids: selectedItems
+            menu_items: selectedMenus
         })
-    }).then(response => {
-        if (response.ok) {
-            window.location.reload();
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => Promise.reject(err));
         }
+        return response.json();
+    })
+    .then(data => {
+        alert(`Order updated successfully! New balance: $${data.new_balance}`);
+        window.location.reload();
+    })
+    .catch(error => {
+        alert('Failed to update order: ' + (error.error || error.message));
     });
 }
 

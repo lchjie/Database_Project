@@ -74,10 +74,24 @@ def create_order(request):
     try:
         data = json.loads(request.body)
         student = get_object_or_404(Student, id=data['student_id'])
-        menus = Menu.objects.filter(id__in=data['menu_ids'])
+        menu_items = data['menu_items']  # List of {menu_id, quantity}
         
-        # Calculate total price from menus
-        total_price = sum(menu.price for menu in menus)
+        # Calculate total price including quantities
+        total_price = 0
+        items_to_create = []
+        
+        for menu_item in menu_items:
+            menu = Menu.objects.get(id=menu_item['menu_id'])
+            quantity = menu_item['quantity']
+            total_price += menu.price * quantity
+            
+            # Create items for each quantity
+            for _ in range(quantity):
+                items_to_create.append(Item(
+                    name=menu.name,
+                    price=menu.price,
+                    menu=menu
+                ))
         
         # Check if student has sufficient balance
         if student.account_balance < total_price:
@@ -85,24 +99,10 @@ def create_order(request):
                 'error': 'Insufficient account balance'
             }, status=400)
         
-        # Validate all menus are from the same restaurant
-        restaurants = set(menu.restaurant.id for menu in menus)
-        if len(restaurants) > 1:
-            return JsonResponse({
-                'error': 'All menus must be from the same restaurant'
-            }, status=400)
-        
-        # Create order
+        # Create order and items
         order = Order.objects.create(student=student)
-        
-        # Create items from menus and add them to order
-        for menu in menus:
-            item = Item.objects.create(
-                name=menu.name,
-                price=menu.price,
-                menu=menu
-            )
-            order.items.add(item)
+        created_items = Item.objects.bulk_create(items_to_create)
+        order.items.set(created_items)
         
         # Deduct the total price from student's balance
         student.account_balance -= total_price
@@ -122,11 +122,29 @@ def update_order(request, order_id):
     try:
         data = json.loads(request.body)
         order = get_object_or_404(Order, id=order_id)
-        new_items = Item.objects.filter(id__in=data['item_ids'])
+        menu_items = data['menu_items']  # List of {menu_id, quantity}
+        
+        # Calculate old total
+        old_total = sum(item.price for item in order.items.all())
+        
+        # Calculate new total and create new items
+        new_total = 0
+        items_to_create = []
+        
+        for menu_item in menu_items:
+            menu = Menu.objects.get(id=menu_item['menu_id'])
+            quantity = menu_item['quantity']
+            new_total += menu.price * quantity
+            
+            # Create items for each quantity
+            for _ in range(quantity):
+                items_to_create.append(Item(
+                    name=menu.name,
+                    price=menu.price,
+                    menu=menu
+                ))
         
         # Calculate price difference
-        old_total = sum(item.price for item in order.items.all())
-        new_total = sum(item.price for item in new_items)
         price_difference = new_total - old_total
         
         # Check if student has sufficient balance for price increase
@@ -136,7 +154,9 @@ def update_order(request, order_id):
             }, status=400)
         
         # Validate all new items are from the same restaurant
-        restaurants = set(item.menu.restaurant.id for item in new_items)
+        restaurants = set(menu.restaurant.id for menu in Menu.objects.filter(
+            id__in=[item['menu_id'] for item in menu_items]
+        ))
         if len(restaurants) > 1:
             return JsonResponse({
                 'error': 'All items must be from the same restaurant'
@@ -147,8 +167,9 @@ def update_order(request, order_id):
         student.account_balance -= price_difference
         student.save()
         
-        # Update order items
-        order.items.set(new_items)
+        # Create new items and update order
+        created_items = Item.objects.bulk_create(items_to_create)
+        order.items.set(created_items)
         
         return JsonResponse({
             'message': 'Order updated successfully',
@@ -406,10 +427,21 @@ def get_restaurant_menu_items(request, restaurant_id):
 
 def get_order(request, order_id):
     order = get_object_or_404(Order, id=order_id)
+    menu_items = {}
+    for item in order.items.all():
+        if item.menu_id in menu_items:
+            menu_items[item.menu_id]['quantity'] += 1
+        else:
+            menu_items[item.menu_id] = {
+                'menu_id': item.menu_id,
+                'quantity': 1
+            }
+    
     return JsonResponse({
         'order_id': order.id,
         'restaurant_id': order.items.first().menu.restaurant.id,
-        'selected_items': list(order.items.values_list('id', flat=True))
+        'selected_items': list(menu_items.values()),
+        'total_price': float(sum(item.price for item in order.items.all()))
     })
 
 @csrf_exempt
