@@ -59,9 +59,34 @@ def update_student(request, student_id):
     pass
 
 # Delete
+@csrf_exempt
+@require_http_methods(["DELETE"])
 def delete_student(request, student_id):
-    # Implement logic to delete a student
-    pass
+    try:
+        student = get_object_or_404(Student, id=student_id)
+        
+        # Check if student has any active orders
+        active_orders = Order.objects.filter(student=student).exists()
+        if active_orders:
+            return JsonResponse({
+                'error': 'Cannot delete student with active orders'
+            }, status=400)
+            
+        # Delete the student
+        student.delete()
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Student deleted successfully'
+        })
+    except Student.DoesNotExist:
+        return JsonResponse({
+            'error': 'Student not found'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'error': str(e)
+        }, status=400)
 
 from django.http import HttpResponse
 
@@ -519,10 +544,29 @@ def update_student(request, student_id):
 def delete_student(request, student_id):
     try:
         student = get_object_or_404(Student, id=student_id)
+        
+        # Check if student has any active orders
+        active_orders = Order.objects.filter(student=student).exists()
+        if active_orders:
+            return JsonResponse({
+                'error': 'Cannot delete student with active orders'
+            }, status=400)
+            
+        # Delete the student
         student.delete()
-        return JsonResponse({'message': 'Student deleted successfully'})
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Student deleted successfully'
+        })
+    except Student.DoesNotExist:
+        return JsonResponse({
+            'error': 'Student not found'
+        }, status=404)
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=400)
+        return JsonResponse({
+            'error': str(e)
+        }, status=400)
 
 def search_restaurants(request):
     query = request.GET.get('query', '').lower()

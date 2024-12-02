@@ -18,6 +18,7 @@ urlpatterns = [
     path('api/financial/', views.financial_overview, name='financial_overview'),
     path('api/restaurants/search/', views.search_restaurants, name='search_restaurants'),
     path('api/students/search/', views.search_students, name='search_students'),
+    path('api/student/<int:student_id>/delete/', views.delete_student, name='delete_student'),
 
     # Web pages
     path('', views.homepage, name='homepage'),

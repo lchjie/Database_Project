@@ -109,17 +109,35 @@ function resetForm() {
 }
 
 function deleteStudent() {
-    if (!currentStudentId || !confirm('Are you sure you want to delete this student?')) return;
-    
+    if (!currentStudentId) {
+        alert('No student selected');
+        return;
+    }
+
+    if (!confirm('Are you sure you want to delete this student? This action cannot be undone.')) {
+        return;
+    }
+
     fetch(`/api/student/${currentStudentId}/delete/`, {
         method: 'DELETE',
         headers: {
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
         }
-    }).then(response => {
-        if (response.ok) {
-            window.location.reload();
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => Promise.reject(err));
         }
+        return response.json();
+    })
+    .then(data => {
+        alert('Student deleted successfully');
+        window.location.reload();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to delete student: ' + (error.error || error.message));
     });
 }
 
