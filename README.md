@@ -3,6 +3,9 @@
 ## Project Overview
 A comprehensive database management system designed for Newcomb Hall's school cafeteria, built with Django. This system efficiently manages restaurant data, student orders, and financial transactions to streamline cafeteria operations.
 
+## Demo Video
+https://www.youtube.com/watch?v=NgTMrLiHwJI
+
 ## Features
 
 ### 1. Order Management
